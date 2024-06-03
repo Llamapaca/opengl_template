@@ -1,49 +1,58 @@
-cmake_minimum_required(VERSION 3.11 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.4...3.28 FATAL_ERROR)
 
-project(opengl CXX)
-
-
-set(GLAD_OUT_DIR        "${CMAKE_CURRENT_BINARY_DIR}" CACHE STRING "Output directory" FORCE)
-set(GLAD_PROFILE        "core" CACHE STRING "OpenGL profile" FORCE)
-set(GLAD_API            "gl=3.3" CACHE STRING "API type/version pairs, like \"gl=3.2,gles=\", no version means latest" FORCE)
-set(GLAD_GENERATOR      "c" CACHE STRING "Language to generate the binding for" FORCE)
-set(GLAD_EXTENSIONS     "" CACHE STRING "Path to extensions file or comma separated list of extensions, if missing all extensions are included" FORCE)
-set(GLAD_SPEC           "gl" CACHE STRING "Name of the spec" FORCE)
-set(GLAD_ALL_EXTENSIONS OFF CACHE BOOL "Include all extensions instead of those specified by GLAD_EXTENSIONS" FORCE)
-set(GLAD_NO_LOADER      OFF CACHE BOOL "No loader" FORCE)
-set(GLAD_REPRODUCIBLE   OFF CACHE BOOL "Reproducible build" FORCE)
-
-set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+project(LOpenGL CXX C)
 
 
 set(SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/helloTriangle)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-set(CMAKE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-
 set(sources ${SOURCE_DIR}/main.cpp)
 
-# includes not defined ? 
-add_executable(opengl ${sources} ${includes})
+add_executable(lopengl ${sources} ${includes})
 
-include(${CMAKE_DIR}/LinkGLFW.cmake)
-LinkGLFW(opengl PRIVATE)
+include(FetchContent)
 
-include(${CMAKE_DIR}/LinkGLAD.cmake)
-LinkGLAD(opengl PRIVATE)
+FetchContent_Declare(
+    glfw
+    GIT_REPOSITORY https://github.com/glfw/glfw
+    GIT_TAG 3.4
+)
+
+FetchContent_MakeAvailable(glfw)
+
+set(GLFW_BUILD_EXAMPLES     OFF CACHE BOOL "Build Examples" FORCE)
+set(GLFW_BUILD_TESTS        OFF CACHE BOOL "Build tests" FORCE)
+set(GLFW_BUILD_DOCS         OFF CACHE BOOL "Build docs" FORCE)
+set(GLFW_INSTALL            OFF CACHE BOOL "Configure an install" FORCE)
+set(GLFW_BUILD_WAYLAND      ON  CACHE BOOL "Use Wayland" FORCE)
+set(GLFW_BUILD_X11          OFF  CACHE BOOL "Don't Use X11" FORCE)
+
+target_link_libraries(lopengl PRIVATE glfw)
+add_dependencies(lopengl glfw)
+
+FetchContent_Declare(
+    glad
+    GIT_REPOSITORY https://github.com/Dav1dde/glad
+    GIT_TAG v2.0.6
+    SOURCE_SUBDIR cmake
+)
+
+FetchContent_MakeAvailable(glad)
+glad_add_library(glad STATIC API gl:core=4.6)
+target_link_libraries(lopengl PRIVATE glad)
+add_dependencies(lopengl glad)
 
 
 find_package(OpenGL REQUIRED)
 if(OpenGL_FOUND)
-    target_include_directories(opengl PRIVATE ${OPENGL_INCLUDE_DIRS})
-    target_link_libraries(opengl PRICATE ${OPENGL_LIBRARIES})
+    target_include_directories(lopengl PRIVATE ${OPENGL_INCLUDE_DIRS})
+    target_link_libraries(lopengl PRIVATE ${OPENGL_LIBRARIES})
 else()
     message(FATAL_ERROR "OpenGL Could Not Be Found!")
+endif()
 
 set_target_properties(
-    opengl PROPERTIES
-    CXX_STANDARD 17
+    lopengl PROPERTIES
+    CXX_STANDARD 20
     CXX_STANDARD_REQUIRED YES
-    CXX_EXTENSIONS NO
 )
 
-set_target_properties(opengl PROPERTIES FOLDER ${PROJECT_NAME})
+set_target_properties(lopengl PROPERTIES FOLDER ${PROJECT_NAME})
